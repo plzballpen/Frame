@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation=" http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd ">
+	
+	<!-- access-denied-page = 접속 권한이 없을 경우 호출되는 페이지 -->
+	<http auto-config="true" use-expressions="true" access-denied-page="/denied">
+		<!-- 
+		login-page = 로그인 페이지, 세션 인증이 없는 경우 호출될 URL(기본 URL : j_spring_security_login)
+		username-parameter = 로그인 페이지에서 사용될 사용자 계정 파라미터명
+		password-parameter = 로그인 페이지에서 사용될 사용자 암호 파라메터명
+		login-processing-url = 로그인 처리를 호출할때 사용 할 URL. 보여지는 URL 일뿐 j_spring_security_check 호출되어 로그인 처리한다.
+		authentication-failure-url = 로그인을 실패했을 때 호출될 URL
+		default-target-url = 로그인 후 호출될 URL
+		always-use-default-target = 로그인 후 항상 default-target-url 호출할 것인 지 여부. false 인 경우 로그인 페이지 이전화면을 호출한다.
+		authentication-success-handler-ref = 로그인 후 호출될 핸들러. 직접 후처리를 작업할 경우 사용
+		authentication-failure-handler-ref = 로그인 실패 후 호출될 핸들러. 직접 후처리를 작업할 경우 사용
+		 -->
+			
+		<form-login 
+		login-page="/signin" 
+		username-parameter="user_id"
+		password-parameter="password" 
+		default-target-url="/mypage" 
+		always-use-default-target="false" />
+		
+		<!-- 
+		invalidate-session = 세션 삭제 여부
+		logout-success-url = 로그아웃 후 호출될 URL
+		logout-url = 로그아웃 처리를 요청할때 사용할 URL. 보여지는 URL 일뿐 j_spring_security_logout 호출되어 로그아웃을 처리한다
+		delete-cookies = 삭제할 쿠키명을 입력한다.
+		 -->
+		<logout 
+		invalidate-session="true" 
+		logout-success-url="/signin"
+		logout-url="/signout" />
+	</http>
+	
+	<!-- success-handler, fail-handler 추가, 클래스 빈 적용 -->
+	<beans:bean id="signinSuccessHandler" class="first.security.SigninSuccessHandler" /> 
+	<beans:bean id="signinFailureHandler" class="first.security.SigninFailureHandler"> 
+		<beans:property name="defaultFailureUrl" value="/signin?error=true" /> 
+	</beans:bean>
+
+
+	<beans:bean id="userService" class="first.security.domain.UserService" />
+	<beans:bean id="customAuthenticationProvider" class="first.security.CustomAuthenticationProvider" />
+	<beans:bean id="encoder" class="org.springframework.security.crypto.password.StandardPasswordEncoder" />
+
+	<beans:bean id="saltSource"
+		class="org.springframework.security.authentication.dao.ReflectionSaltSource">
+		<beans:property name="userPropertyToUse" value="username" />
+	</beans:bean>
+
+	<!-- 
+	<beans:bean id="encoder"
+		class="org.springframework.security.authentication.encoding.ShaPasswordEncoder" />
+	-->
+	
+<!-- 	
+		<authentication-manager>
+			<authentication-provider user-service-ref="userService">
+				<password-encoder ref="encoder">
+					<salt-source ref="saltSource" />
+				</password-encoder>
+			</authentication-provider>
+		</authentication-manager>
+ -->
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider ref="customAuthenticationProvider" />
+		<authentication-provider user-service-ref="userService">
+			<password-encoder ref="encoder">
+				<salt-source ref="saltSource" />
+			</password-encoder>
+		</authentication-provider>
+	</authentication-manager>
+
+
+<!-- 
+	<authentication-manager>
+		<authentication-provider>
+			<password-encoder ref="passwordEncoder" />
+			<user-service>
+				<user name="guest" password="35675e68f4b5af7b995d9205ad0fc43842f16450"
+					authorities="ROLE_USER" />
+				<user name="admin" password="d033e22ae348aeb5660fc2140aec35850c4da997"
+					authorities="ROLE_ADMIN" />
+			</user-service>
+		</authentication-provider>
+	</authentication-manager>
+	
+	<beans:bean class="org.springframework.security.authentication.encoding.ShaPasswordEncoder" id="passwordEncoder" />
+ -->
+</beans:beans>
